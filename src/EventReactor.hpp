@@ -24,23 +24,32 @@ public:
     EntryLocation_t registerCallback(Func_T&& function)
     {
         // Wrap the function in the storable function type if needed
-        auto callback = ([&function] {
-            if constexpr (!std::is_convertible_v<Func_T, std::function<void(const void*)>>) {
-                return [&function](const void*){function();};
-            }
-            else return function;
-        })();
-
-        return this->_insertCallback(getTypeId<Event_T>(), std::move(callback));
+        // auto callback = ([&function] {
+        //     if constexpr (!std::is_convertible_v<Func_T, std::function<void(const void*)>>) {
+        //         return [&function](const void*){function();};
+        //     }
+        //     else return function;
+        // })();
+        if constexpr (std::is_convertible_v<Func_T, std::function<void()>>) {
+            return this->_insertCallback(getTypeId<Event_T>(), [&](const void*) {
+                function();
+            });
+        }
+        else return this->_insertCallback(getTypeId<Event_T>(), [&](const void* ev) {
+            function(static_cast<const Event_T*>(ev));
+        });
     }
 
     /**
      * Register class methods taking const Event& as argument.
      */
     template <class Event_T, class T>
-    EntryLocation_t registerCallback(void (T::*function)(const void*), T& object)
+    EntryLocation_t registerCallback(void (T::*function)(const Event_T*), T& object)
     {
-        auto callback = std::bind(function, &object, std::placeholders::_1);
+        auto callback = [&](const void* ev) {
+            (object.*function)(static_cast<const Event_T*>(ev));
+        };
+        // return this->_insertCallback(getTypeId<Event_T>(), std::bind(function, &object, ));
         return this->_insertCallback(getTypeId<Event_T>(), std::move(callback));
     }
 
@@ -50,8 +59,7 @@ public:
     template <class Event_T, class T>
     EntryLocation_t registerCallback(void (T::*function)(), T& object)
     {
-        auto callback = std::bind(function, &object);
-        return this->_insertCallback(getTypeId<Event_T>(), std::move(callback));
+        return this->_insertCallback(getTypeId<Event_T>(), std::bind(function, &object));
     }
 
 
