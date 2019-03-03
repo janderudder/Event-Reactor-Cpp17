@@ -1,9 +1,20 @@
+/**
+ **     Examples for EventReactor
+ **
+ **     author: Jan Derudder
+ **     license: MIT
+ **
+ **/
 #include <iostream>
 #include <variant>
 
 #include "EventReactor.hpp"
 
+
+//* Empty arbitrary event
 struct MyEvent {};
+
+//* Event with data
 struct ResizeEvent
 {
     float x, y;
@@ -14,12 +25,13 @@ struct ResizeEvent
     {}
 };
 
+//* Struct that will be accessed by callbacks
+//* (methods called and data written & read).
 struct MyStruct {
 
     float x, y;
 
     MyStruct() : x{0}, y{0} {}
-
 
     void show() const {
         std::cout << "State of myStruct now : " << x << ", " << y << "\n";
@@ -38,6 +50,8 @@ struct MyStruct {
     }
 };
 
+
+// * Free functions
 void freeFunc() { std::cout << "Hello free function.\n"; }
 
 void freeFunc2(const ResizeEvent& ev) {
@@ -49,19 +63,35 @@ void freeFunc2(const ResizeEvent& ev) {
 
 int main()
 {
-
-    MyEvent myEvent;
+    // Structure to play with
     MyStruct myStruct;
+
+    // The main class of this program
+    EventReactor reactor;
+
+    // Lambda as callback
+    reactor.registerCallback<MyEvent>([&]{ std::cout << "Hello MyEvent.\n"; });
+
+    // Function without parameter
+    reactor.registerCallback<MyEvent>(freeFunc);
+
+    // Function that receives the event as param
+    reactor.registerCallback<ResizeEvent>(freeFunc2);
+
+    // Method no param
+    reactor.registerCallback<ResizeEvent>(&MyStruct::inc, myStruct);
+
+    // Method with event as param
+    reactor.registerCallback<ResizeEvent>(MyStruct::react, myStruct);
+
+    // Const method, no param
+    reactor.registerCallback<ResizeEvent>(MyStruct::show, myStruct);
+
+    // Instantiate  events
+    MyEvent myEvent;
     ResizeEvent resizeEvent{1.1, 2.2};
-    EventReactor er;
 
-    er.registerCallback<MyEvent>([&]{ std::cout << "Hello MyEvent.\n"; });
-    er.registerCallback<MyEvent>(freeFunc);
-    er.registerCallback<ResizeEvent>(freeFunc2);
-    er.registerCallback<ResizeEvent>(&MyStruct::inc, myStruct);
-    er.registerCallback<ResizeEvent>(MyStruct::react, myStruct);
-    er.registerCallback<ResizeEvent>(MyStruct::show, myStruct);
-
-    er.reactTo(myEvent);
-    er.reactTo(resizeEvent);
+    // Fire the callbacks for both types
+    reactor.reactTo(myEvent);
+    reactor.reactTo(resizeEvent);
 }

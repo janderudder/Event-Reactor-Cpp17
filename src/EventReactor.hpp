@@ -23,7 +23,7 @@ public:
      * Register free and static class functions.
      */
     template <class Event_T, class Func_T>
-    EntryLocation_t registerCallback(Func_T&& function)
+    constexpr EntryLocation_t registerCallback(Func_T&& function)
     {
         if constexpr (std::is_convertible_v<Func_T, std::function<void()>>) {
             return this->_insertCallback(getTypeId<Event_T>(), [&](const std::any&) {
@@ -39,7 +39,7 @@ public:
      * Register non-const class methods taking const& to event as argument.
      */
     template <class Event_T, class T>
-    EntryLocation_t registerCallback(void (T::*function)(const Event_T&), T& object)
+    constexpr EntryLocation_t registerCallback(void (T::*function)(const Event_T&), T& object)
     {
         auto memFun = std::mem_fn(function);
         auto callback = [memFun, &function, &object](const std::any& ev) {
@@ -52,7 +52,7 @@ public:
      * Register const class methods taking const& to event as argument.
      */
     template <class Event_T, class T>
-    EntryLocation_t registerCallback(void (T::*function)(const Event_T&) const, T& object)
+    constexpr EntryLocation_t registerCallback(void (T::*function)(const Event_T&) const, const T& object)
     {
         auto memFun = std::mem_fn(function);
         auto callback = [memFun, &function, &object](const std::any& ev) {
@@ -65,7 +65,7 @@ public:
      * Register non-const class methods taking no argument.
      */
     template <class Event_T, class T>
-    EntryLocation_t registerCallback(void (T::*function)(), T& object)
+    constexpr EntryLocation_t registerCallback(void (T::*function)(), T& object)
     {
         auto memFun = std::mem_fn(function);
         auto callback = [memFun, &function, &object](const std::any&) {
@@ -78,7 +78,7 @@ public:
      * Register const class methods taking no argument.
      */
     template <class Event_T, class T>
-    EntryLocation_t registerCallback(void (T::*function)() const, T& object)
+    constexpr EntryLocation_t registerCallback(void (T::*function)() const, const T& object)
     {
         auto memFun = std::mem_fn(function);
         auto callback = [memFun, &function, &object](const std::any&) {
@@ -106,7 +106,7 @@ public:
      * Fire callbacks registered for this type of event.
      */
     template <class Event_T>
-    void reactTo(const Event_T& event) const
+    constexpr void reactTo(const Event_T& event) const
     {
         auto it = mCallbacks.find(getTypeId<Event_T>());
 
@@ -138,7 +138,7 @@ private:
         auto& vector = insertionResult.first->second;
         vector.push_back(std::move(callback));
 
-        // Construct the returned object, to enable finding this entry later.
+        // Construct the returned object, which enables finding this entry later.
         return { insertionResult.first, vector.size() - 1 };
     }
 
