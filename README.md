@@ -10,7 +10,11 @@ When it is told to react to an event, it calls all the callbacks registered for 
 
 Here is a minimal documentation. Please look at `main.cpp` for examples.
 
+### Construct
+
 (no constructor)
+
+### Register a callback
 
 ```cpp
 EntryLocation_t registerCallback<Event_Type>(Callback_T);
@@ -30,6 +34,8 @@ type passed as template parameter.
 The instance objects passed in the overloads taking methods will be forwarded as
 `this` parameters of the aforementioned methods.
 
+### React to an event
+
 ```cpp
 template <class T>
 void reactTo(const T& event) const
@@ -37,6 +43,8 @@ void reactTo(const T& event) const
 This method takes a const reference to an object of any type.
 If this type has already been used as template parameter to the `registerCallback` method,
 then all the corresponding registered functions will be called in registration order.
+
+### Remove a callback
 
 ```cpp
 void eraseEntry(const EntryLocation_t& location)
