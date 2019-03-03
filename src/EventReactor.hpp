@@ -9,7 +9,6 @@
  *
  */
 #pragma once
-#include <any>
 #include <map>
 #include <vector>
 #include <functional>
@@ -18,8 +17,9 @@
 
 class EventReactor
 {
+    struct Dummy_T {};
     using EventType_t       = std::uintptr_t;
-    using Callback_t        = std::function<void(const std::any&)>;
+    using Callback_t        = std::function<void(const Dummy_T&)>;
     using Map_t             = std::map<EventType_t, std::vector<Callback_t>>;
     using EntryLocation_t   = std::pair<Map_t::iterator, std::size_t>;
 
@@ -33,12 +33,12 @@ public:
     constexpr EntryLocation_t registerCallback(Func_T&& function)
     {
         if constexpr (std::is_convertible_v<Func_T, std::function<void()>>) {
-            return this->_insertCallback(getTypeId<Event_T>(), [&](const std::any&) {
+            return this->_insertCallback(getTypeId<Event_T>(), [&](const Dummy_T&) {
                 function();
             });
         }
-        else return this->_insertCallback(getTypeId<Event_T>(), [&](const std::any& ev) {
-            function(std::any_cast<const Event_T&>(ev));
+        else return this->_insertCallback(getTypeId<Event_T>(), [&](const Dummy_T& ev) {
+            function(reinterpret_cast<const Event_T&>(ev));
         });
     }
 
@@ -49,8 +49,8 @@ public:
     constexpr EntryLocation_t registerCallback(void (T::*function)(const Event_T&), T& object)
     {
         auto memFun = std::mem_fn(function);
-        auto callback = [memFun, &function, &object](const std::any& ev) {
-            std::invoke(memFun, object, std::any_cast<const Event_T&>(ev));
+        auto callback = [memFun, &function, &object](const Dummy_T& ev) {
+            std::invoke(memFun, object, reinterpret_cast<const Event_T&>(ev));
         };
         return this->_insertCallback(getTypeId<Event_T>(), std::move(callback));
     }
@@ -62,8 +62,8 @@ public:
     constexpr EntryLocation_t registerCallback(void (T::*function)(const Event_T&) const, const T& object)
     {
         auto memFun = std::mem_fn(function);
-        auto callback = [memFun, &function, &object](const std::any& ev) {
-            std::invoke(memFun, object, std::any_cast<const Event_T&>(ev));
+        auto callback = [memFun, &function, &object](const Dummy_T& ev) {
+            std::invoke(memFun, object, reinterpret_cast<const Event_T&>(ev));
         };
         return this->_insertCallback(getTypeId<Event_T>(), std::move(callback));
     }
@@ -75,7 +75,7 @@ public:
     constexpr EntryLocation_t registerCallback(void (T::*function)(), T& object)
     {
         auto memFun = std::mem_fn(function);
-        auto callback = [memFun, &function, &object](const std::any&) {
+        auto callback = [memFun, &function, &object](const Dummy_T&) {
             std::invoke(memFun, object);
         };
         return this->_insertCallback(getTypeId<Event_T>(), std::move(callback));
@@ -88,7 +88,7 @@ public:
     constexpr EntryLocation_t registerCallback(void (T::*function)() const, const T& object)
     {
         auto memFun = std::mem_fn(function);
-        auto callback = [memFun, &function, &object](const std::any&) {
+        auto callback = [memFun, &function, &object](const Dummy_T&) {
             std::invoke(memFun, object);
         };
         return this->_insertCallback(getTypeId<Event_T>(), std::move(callback));
@@ -123,7 +123,7 @@ public:
 
         // Call all callbacks for this event type id.
         for (const auto& callback : std::as_const(it->second)) {
-            std::invoke(callback, std::any{event});
+            std::invoke(callback, reinterpret_cast<const Dummy_T&>(event));
         }
     }
 
@@ -134,7 +134,7 @@ private:
      * the callback into the instance's map and return the location
      * of the new entry.
      */
-    EntryLocation_t _insertCallback(EventType_t eventType, std::function<void(const std::any&)>&& callback)
+    EntryLocation_t _insertCallback(EventType_t eventType, std::function<void(const Dummy_T&)>&& callback)
     {
         // Get an iterator to the relevant array in the map.
         // It will be constructed in place now if it is not already there.
