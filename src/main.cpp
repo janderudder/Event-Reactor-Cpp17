@@ -73,7 +73,7 @@ int main()
     reactor.registerCallback<MyEvent>([&]{ std::cout << "Hello MyEvent.\n"; });
 
     // Function without parameter
-    auto loc = reactor.registerCallback<MyEvent>(freeFunc);
+    auto entryLocation = reactor.registerCallback<MyEvent>(freeFunc);
 
     // Function that receives the event as param
     reactor.registerCallback<ResizeEvent>(freeFunc2);
@@ -91,8 +91,8 @@ int main()
     MyEvent myEvent;
     ResizeEvent resizeEvent{1.1, 2.2};
 
-    // Remove the first free function
-    reactor.eraseEntry(loc);
+    // Remove the 'freeFun' registration
+    reactor.eraseEntry(entryLocation);
 
     // Fire the callbacks for both types
     reactor.reactTo(myEvent);

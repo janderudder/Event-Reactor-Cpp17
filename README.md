@@ -6,13 +6,40 @@ Fire callbacks when events are received.
 An EventReactor instance registers any number of arbitrary types / callbacks pairs.
 When it is told to react to an event, it calls all the callbacks registered for this particular event type.
 
+
+## Example
+
+```cpp
+struct Event {} event;
+
+struct Object {
+  void sayHi() const { std::cout << "Hello Object!\n"; }
+} object;
+
+EventReactor reactor;
+reactor.registerCallback<Event>(Object::sayHi, object);
+reactor.reactTo(event);
+
+// Outputs:
+// Hello Object!
+```
+
+You can see other working examples in `main.cpp`.
+
+
 ## API
 
-Here is a minimal documentation. Please look at `main.cpp` for examples.
+Here is a minimal interface documentation.
 
 ### Construct
 
 Default constructor (no parameter).
+
+#### Example
+```cpp
+EventReactor reactor;
+```
+
 
 ### Register a callback
 
@@ -29,10 +56,23 @@ The three overloads of this method template take respectively
 
 `Callback_T` has some constraints : it can only return `void`, and it may take
 either no parameter at all, either one parameter being a const reference to the
-type passed as template parameter.
+type passed as template parameter. That is, it must be convertible to one of the following two types:
+
+```cpp
+std::function <void()>;
+
+template <typename Event_Type>
+std::function <void(const Event_Type&)>;
+```
 
 The instance objects passed in the overloads taking methods will be forwarded as
 `this` parameters of the aforementioned methods.
+
+#### Example
+```cpp
+const auto locationOfEntry = reactor.registerCallback<Event>([]{ /* a lambda function. */ });
+```
+
 
 ### React to an event
 
@@ -44,6 +84,13 @@ This method takes a const reference to an object of any type.
 If this type has already been used as template parameter to the `registerCallback` method,
 then all the corresponding registered functions will be called in registration order.
 
+#### Example
+```cpp
+// Fire all callbacks registered with decltype(event).
+reactor.reactTo(event);
+```
+
+
 ### Remove a callback
 
 ```cpp
@@ -51,6 +98,12 @@ void eraseEntry(const EntryLocation_t& location)
 ```
 Taking an EntryLocation object as returned by `registerCallback`, this method will
 erase the corresponding entry in the underlying storage of the class.
+
+#### Example
+```cpp
+const auto entryLocation = reactor.registerCallback<Event>(/*...*/);
+reactor.eraseEntry(entryLocation);
+```
 
 ## Implementation details
 
