@@ -2,23 +2,45 @@
 #include <variant>
 
 #include "EventReactor.hpp"
-#include "Event.hpp"
-#include "MyStruct.hpp"
-#include "getTypeId.hpp"
+
+struct MyEvent {};
+struct ResizeEvent
+{
+    float x, y;
+
+    ResizeEvent(float xx, float yy) noexcept
+        : x     {xx}
+        , y     {yy}
+    {}
+};
+
+struct MyStruct {
+
+    float x, y;
+
+    MyStruct() : x{0}, y{0} {}
+
+    void inc() {
+        x += 1.f;
+        y += 1.f;
+
+        std::cout << "inc() : " << this->x << ", " << this->y << "\n";
+    }
+
+    void react(const void* ev) {
+        x += reinterpret_cast<const ResizeEvent*>(ev)->x;
+        y += reinterpret_cast<const ResizeEvent*>(ev)->y;
+    }
+};
 
 void freeFunc() { std::cout << "Hello free function.\n"; }
 
-void freeFunc2(const Event& ev) {
-    auto rev = static_cast<const ResizeEvent&>(ev);
-    std::cout << "freeFunc2: " << rev.x << ", " << rev.y << "\n";
+void freeFunc2(const void* ev) {
+    auto rev = static_cast<const ResizeEvent*>(ev);
+    std::cout << "freeFunc2: " << rev->x << ", " << rev->y << "\n";
 }
 
 
-struct MyEvent : public Event {
-    // const TypeIdentifier    type    =   getTypeId<MyEvent>();
-    // const void*             data    =   nullptr;
-    MyEvent() : Event{getTypeId<MyEvent>()} {}
-};
 
 
 int main()
