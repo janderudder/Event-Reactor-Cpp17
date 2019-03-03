@@ -13,9 +13,9 @@ Here is a minimal documentation. Please look at `main.cpp` for examples.
 (no constructor)
 
 ```cpp
-EntryLocation_t registerCallback<Event_Type>(Callback_T)
-EntryLocation_t registerCallback<Event_Type>(Callback_T, Obj&)
-EntryLocation_t registerCallback<Event_Type>(Callback_T, Obj const&)
+EntryLocation_t registerCallback<Event_Type>(Callback_T);
+EntryLocation_t registerCallback<Event_Type>(Callback_T, Obj&);
+EntryLocation_t registerCallback<Event_Type>(Callback_T, Obj const&);
 ```
 
 The three overloads of this method template take respectively
@@ -31,7 +31,8 @@ The instance objects passed in the overloads taking methods will be forwarded as
 `this` parameters of the aforementioned methods.
 
 ```cpp
-void reactTo(const Event_T& event) const
+template <class T>
+void reactTo(const T& event) const
 ```
 This method takes a const reference to an object of any type.
 If this type has already been used as template parameter to the `registerCallback` method,

@@ -5,7 +5,7 @@
  *
  * License: Public Domain
  *
- * See bottom of this file for license agreement.
+ * See bottom of this file for terms of use.
  *
  */
 #pragma once
@@ -22,7 +22,6 @@ class EventReactor
     using Callback_t        = std::function<void(const std::any&)>;
     using Map_t             = std::map<EventType_t, std::vector<Callback_t>>;
     using EntryLocation_t   = std::pair<Map_t::iterator, std::size_t>;
-
 
     Map_t mCallbacks;
 

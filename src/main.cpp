@@ -4,12 +4,10 @@
  *   Author: Jan Derudder <janderudder.dev@gmail.com>
  *   License: Public Domain
  *
- *   See bottom of this file for license agreement.
+ *   See bottom of this file for terms of use.
  *
  */
 #include <iostream>
-#include <variant>
-
 #include "EventReactor.hpp"
 
 
@@ -99,6 +97,16 @@ int main()
     // Fire the callbacks for both types
     reactor.reactTo(myEvent);
     reactor.reactTo(resizeEvent);
+
+    /*
+     * Expected output:
+     *
+     *     Hello MyEvent.
+     *     Hello free function.
+     *     freeFunc2: 1.1, 2.2
+     *     inc() : 1, 1
+     *     State of myStruct now : 2.1, 3.2
+     */
 
 }
 
