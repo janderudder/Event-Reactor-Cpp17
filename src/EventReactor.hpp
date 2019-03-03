@@ -129,15 +129,13 @@ private:
      */
     EntryLocation_T _insertCallback(EventType_T eventType, std::function<void(const Event&)>&& callback)
     {
-        // Get an iterator to the relevant array in the map (it is
-        // constructed in place now if it is not already in there).
+        // Get an iterator to the relevant array in the map.
+        // It will be constructed in place now if it is not already there.
         std::pair<Map_T::iterator, bool>
             insertionResult = mCallbacks.try_emplace(eventType);
 
-        // A reference to the array, taken from the iterator.
+        // The iterator gives us the array to insert to.
         auto& vector = insertionResult.first->second;
-
-        // Construct the new std::variant with the 'no arg' callback type.
         vector.push_back(std::move(callback));
 
         // Construct the returned object, to enable finding this entry later.
