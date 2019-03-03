@@ -102,7 +102,6 @@ int main()
      * Expected output:
      *
      *     Hello MyEvent.
-     *     Hello free function.
      *     freeFunc2: 1.1, 2.2
      *     inc() : 1, 1
      *     State of myStruct now : 2.1, 3.2
