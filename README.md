@@ -49,3 +49,13 @@ This class uses `std::any` to pass the event parameter to registered callbacks, 
 This approach could be easily avoided by taking the event parameter as `const void*` type.
 
 The callbacks are very limited in return and parameter types. If you know a way to obtain a completely generic interface I would be interested to know. Please contact me.
+
+## License
+
+You are welcome to use and redistribute this software.
+However, as I'm curious, I would very well like to know if you actually use or improve it.
+
+THIS SOFTWARE AND PROGRAM IS BEING PROVIDED "AS IS", WITHOUT ANY WARRANTY OF
+ANY TYPE OR NATURE, EITHER EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE,
+AND ANY WARRANTY THAT THIS SOFTWARE OR PROGRAM IS FREE FROM DEFECTS.

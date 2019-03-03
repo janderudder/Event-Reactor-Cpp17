@@ -1,8 +1,10 @@
 /*
  *   Examples for EventReactor
  *
- *   author: Jan Derudder <janderudder.dev@gmail.com>
- *   license: MIT
+ *   Author: Jan Derudder <janderudder.dev@gmail.com>
+ *   License: Public Domain
+ *
+ *   See bottom of this file for license agreement.
  *
  */
 #include <iostream>
@@ -99,3 +101,15 @@ int main()
     reactor.reactTo(resizeEvent);
 
 }
+
+
+/*
+
+You are welcome to use and redistribute this software.
+
+THIS SOFTWARE AND PROGRAM IS BEING PROVIDED "AS IS", WITHOUT ANY WARRANTY OF
+ANY TYPE OR NATURE, EITHER EXPRESS OR IMPLIED, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE,
+AND ANY WARRANTY THAT THIS SOFTWARE OR PROGRAM IS FREE FROM DEFECTS.
+
+*/
