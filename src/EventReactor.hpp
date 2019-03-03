@@ -1,22 +1,25 @@
+/**
+ * EventReactor
+ * Jan Derudder <janderudder.dev@gmail.com>
+ * License: MIT
+ */
 #pragma once
 #include <any>
 #include <map>
 #include <vector>
 #include <functional>
-
 #include "getTypeId.hpp"
 
 
 class EventReactor
 {
-    using EventType_t       = TypeIdentifier;
+    using EventType_t       = std::uintptr_t;
     using Callback_t        = std::function<void(const std::any&)>;
     using Map_t             = std::map<EventType_t, std::vector<Callback_t>>;
     using EntryLocation_t   = std::pair<Map_t::iterator, std::size_t>;
 
 
     Map_t mCallbacks;
-
 
 public:
     /**

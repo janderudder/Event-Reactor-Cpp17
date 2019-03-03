@@ -1,10 +1,10 @@
-/**
- **     Examples for EventReactor
- **
- **     author: Jan Derudder
- **     license: MIT
- **
- **/
+/*
+ *   Examples for EventReactor
+ *
+ *   author: Jan Derudder <janderudder.dev@gmail.com>
+ *   license: MIT
+ *
+ */
 #include <iostream>
 #include <variant>
 
@@ -51,7 +51,7 @@ struct MyStruct {
 };
 
 
-// * Free functions
+//* Free functions
 void freeFunc() { std::cout << "Hello free function.\n"; }
 
 void freeFunc2(const ResizeEvent& ev) {
@@ -73,7 +73,7 @@ int main()
     reactor.registerCallback<MyEvent>([&]{ std::cout << "Hello MyEvent.\n"; });
 
     // Function without parameter
-    reactor.registerCallback<MyEvent>(freeFunc);
+    auto loc = reactor.registerCallback<MyEvent>(freeFunc);
 
     // Function that receives the event as param
     reactor.registerCallback<ResizeEvent>(freeFunc2);
@@ -91,7 +91,11 @@ int main()
     MyEvent myEvent;
     ResizeEvent resizeEvent{1.1, 2.2};
 
+    // Remove the first free function
+    reactor.eraseEntry(loc);
+
     // Fire the callbacks for both types
     reactor.reactTo(myEvent);
     reactor.reactTo(resizeEvent);
+
 }
