@@ -1,14 +1,16 @@
 #pragma once
+#include <any>
 #include <map>
 #include <vector>
 #include <functional>
+
 #include "getTypeId.hpp"
 
 
 class EventReactor
 {
     using EventType_t       = TypeIdentifier;
-    using Callback_t        = std::function<void(const void*)>;
+    using Callback_t        = std::function<void(const std::any&)>;
     using Map_t             = std::map<EventType_t, std::vector<Callback_t>>;
     using EntryLocation_t   = std::pair<Map_t::iterator, std::size_t>;
 
@@ -23,43 +25,66 @@ public:
     template <class Event_T, class Func_T>
     EntryLocation_t registerCallback(Func_T&& function)
     {
-        // Wrap the function in the storable function type if needed
-        // auto callback = ([&function] {
-        //     if constexpr (!std::is_convertible_v<Func_T, std::function<void(const void*)>>) {
-        //         return [&function](const void*){function();};
-        //     }
-        //     else return function;
-        // })();
         if constexpr (std::is_convertible_v<Func_T, std::function<void()>>) {
-            return this->_insertCallback(getTypeId<Event_T>(), [&](const void*) {
+            return this->_insertCallback(getTypeId<Event_T>(), [&](const std::any&) {
                 function();
             });
         }
-        else return this->_insertCallback(getTypeId<Event_T>(), [&](const void* ev) {
-            function(static_cast<const Event_T*>(ev));
+        else return this->_insertCallback(getTypeId<Event_T>(), [&](const std::any& ev) {
+            function(std::any_cast<const Event_T&>(ev));
         });
     }
 
     /**
-     * Register class methods taking const Event& as argument.
+     * Register non-const class methods taking const& to event as argument.
      */
     template <class Event_T, class T>
-    EntryLocation_t registerCallback(void (T::*function)(const Event_T*), T& object)
+    EntryLocation_t registerCallback(void (T::*function)(const Event_T&), T& object)
     {
-        auto callback = [&](const void* ev) {
-            (object.*function)(static_cast<const Event_T*>(ev));
+        auto memFun = std::mem_fn(function);
+        auto callback = [memFun, &function, &object](const std::any& ev) {
+            std::invoke(memFun, object, std::any_cast<const Event_T&>(ev));
         };
-        // return this->_insertCallback(getTypeId<Event_T>(), std::bind(function, &object, ));
         return this->_insertCallback(getTypeId<Event_T>(), std::move(callback));
     }
 
     /**
-     * Register class methods taking no argument.
+     * Register const class methods taking const& to event as argument.
+     */
+    template <class Event_T, class T>
+    EntryLocation_t registerCallback(void (T::*function)(const Event_T&) const, T& object)
+    {
+        auto memFun = std::mem_fn(function);
+        auto callback = [memFun, &function, &object](const std::any& ev) {
+            std::invoke(memFun, object, std::any_cast<const Event_T&>(ev));
+        };
+        return this->_insertCallback(getTypeId<Event_T>(), std::move(callback));
+    }
+
+    /**
+     * Register non-const class methods taking no argument.
      */
     template <class Event_T, class T>
     EntryLocation_t registerCallback(void (T::*function)(), T& object)
     {
-        return this->_insertCallback(getTypeId<Event_T>(), std::bind(function, &object));
+        auto memFun = std::mem_fn(function);
+        auto callback = [memFun, &function, &object](const std::any&) {
+            std::invoke(memFun, object);
+        };
+        return this->_insertCallback(getTypeId<Event_T>(), std::move(callback));
+    }
+
+    /**
+     * Register const class methods taking no argument.
+     */
+    template <class Event_T, class T>
+    EntryLocation_t registerCallback(void (T::*function)() const, T& object)
+    {
+        auto memFun = std::mem_fn(function);
+        auto callback = [memFun, &function, &object](const std::any&) {
+            std::invoke(memFun, object);
+        };
+        return this->_insertCallback(getTypeId<Event_T>(), std::move(callback));
     }
 
 
@@ -69,7 +94,7 @@ public:
         const auto [iterator, index] = location;
         auto& vector = iterator->second;
 
-        // Find right entry.
+        // Find the right entry.
         auto vecIt = vector.begin();
         std::advance(vecIt, index);
 
@@ -91,7 +116,7 @@ public:
 
         // Call all callbacks for this event type id.
         for (const auto& callback : std::as_const(it->second)) {
-            std::invoke(callback, static_cast<const void*>(&event));
+            std::invoke(callback, std::any{event});
         }
     }
 
@@ -102,7 +127,7 @@ private:
      * the callback into the instance's map and return the location
      * of the new entry.
      */
-    EntryLocation_t _insertCallback(EventType_t eventType, std::function<void(const void*)>&& callback)
+    EntryLocation_t _insertCallback(EventType_t eventType, std::function<void(const std::any&)>&& callback)
     {
         // Get an iterator to the relevant array in the map.
         // It will be constructed in place now if it is not already there.
