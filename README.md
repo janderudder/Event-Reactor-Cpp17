@@ -55,7 +55,7 @@ erase the corresponding entry in the underlying storage of the class.
 ## Implementation details
 
 This class makes some very liberal reinterpret_casts on the event parameter passed to the registered callbacks, in order to achieve a certain ease of use and a natural syntax for the user.
-They could be replace by static_casts by taking the parameter as pointer `const void*` would be used internally.
+They could be replace by static_casts by taking the parameter as pointers. `const void*` would be used as parameter type internally.
 
 For the sake of genericity and simple interface, the callback calls are wrapped into a second function call.
 This doubles the number of function calls and probably have performance costs.
