@@ -12,7 +12,7 @@ Here is a minimal documentation. Please look at `main.cpp` for examples.
 
 ### Construct
 
-(no constructor)
+Default constructor (no parameter).
 
 ### Register a callback
 
