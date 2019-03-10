@@ -72,8 +72,7 @@ The reference to `SomeType` will be forwarded as the implicit `this` parameter o
 
 ```cpp
 void callback();
-
-template <typename Event_Type> void callback(const Event_Type&);
+void callback(const Event_Type&);
 ```
 
 where `Event_Type` is the same as the template parameter of `registerCallback`. Referencing the event in the callback enables us to pass and process data with each event.
