@@ -9,18 +9,18 @@
  *
  */
 #pragma once
+#include <any>
 #include <map>
-#include <vector>
-#include <functional>
 #include <typeinfo>
 #include <typeindex>
+#include <functional>
 
 
 class EventReactor
 {
     // Declare the field of this class
     using Key               = std::type_index;
-    using Callback          = std::function<void(const void*)>;
+    using Callback          = std::function<void(const std::any)>;
     using Multimap          = std::multimap<Key, Callback>;
 
     Multimap mCallbacks;
@@ -90,7 +90,7 @@ private:
      * the callback into the instance's map and return the location
      * of the new entry.
      */
-    EntryLocation _insertCallback(Key, std::function<void(const void*)>&&);
+    EntryLocation _insertCallback(Key, std::function<void(const std::any)>&&);
 
     /**
      * Transform a type into a key for the multimap.

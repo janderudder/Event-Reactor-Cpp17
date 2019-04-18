@@ -14,12 +14,12 @@ EventReactor::EntryLocation EventReactor::registerCallback
 {
     if constexpr (std::is_convertible_v<Fn, std::function<void()>>)
     { // If callback has no parameter
-        return this->_insertCallback(this->_getKey<Event>(), [&](const void*) {
+        return this->_insertCallback(this->_getKey<Event>(), [&](const std::any) {
             function();
         });
     }
-    else return this->_insertCallback(this->_getKey<Event>(), [&](const void* ev) {
-        function(*static_cast<const Event*>(ev));
+    else return this->_insertCallback(this->_getKey<Event>(), [&](const std::any ev) {
+        function(std::any_cast<const Event&>(ev));
     });
 }
 
@@ -34,8 +34,8 @@ EventReactor::EntryLocation EventReactor::registerCallback
 )
 {
     auto memFun = std::mem_fn(std::move(function));
-    auto callback = [memFun, &function, &object](const void* ev) {
-        std::invoke(memFun, &object, *static_cast<const Event*>(ev));
+    auto callback = [memFun, &function, &object](const std::any ev) {
+        std::invoke(memFun, &object, std::any_cast<Event>(ev));
     };
     return this->_insertCallback(this->_getKey<Event>(), std::move(callback));
 }
@@ -51,8 +51,8 @@ EventReactor::EntryLocation EventReactor::registerCallback
 )
 {
     auto memFun = std::mem_fn(std::move(function));
-    auto callback = [memFun, &function, &object](const void* ev) {
-        std::invoke(memFun, &object, *static_cast<const Event*>(ev));
+    auto callback = [memFun, &function, &object](const std::any ev) {
+        std::invoke(memFun, &object, std::any_cast<Event>(ev));
     };
     return this->_insertCallback(this->_getKey<Event>(), std::move(callback));
 }
@@ -68,7 +68,7 @@ EventReactor::EntryLocation EventReactor::registerCallback
 )
 {
     auto memFun = std::mem_fn(std::move(function));
-    auto callback = [memFun, &function, &object](const void*) {
+    auto callback = [memFun, &function, &object](const std::any) {
         std::invoke(memFun, &object);
     };
     return this->_insertCallback(this->_getKey<Event>(), std::move(callback));
@@ -85,7 +85,7 @@ EventReactor::EntryLocation EventReactor::registerCallback
 )
 {
     auto memFun = std::mem_fn(std::move(function));
-    auto callback = [memFun, &function, &object](const void*) {
+    auto callback = [memFun, &function, &object](const std::any) {
         std::invoke(memFun, &object);
     };
     return this->_insertCallback(this->_getKey<Event>(), std::move(callback));
@@ -108,7 +108,7 @@ void EventReactor::reactTo(const Event& event) const
     const auto range = mCallbacks.equal_range(this->_getKey<Event>());
 
     for (auto it = range.first; it != range.second; ++it) {
-        std::invoke(it->second, static_cast<const void*>(&event));
+        std::invoke(it->second, std::make_any<Event>(event));
     }
 }
 
@@ -121,7 +121,7 @@ void EventReactor::reactTo(const Event& event) const
 EventReactor::EntryLocation EventReactor::_insertCallback
 (
     Key eventType,
-    std::function<void(const void*)>&& callback
+    std::function<void(const std::any)>&& callback
 )
 {
     return mCallbacks.insert({eventType, std::move(callback)});
