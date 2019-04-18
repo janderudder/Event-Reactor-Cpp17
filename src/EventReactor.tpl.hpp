@@ -6,121 +6,109 @@
 /**
  * Register free and static class functions.
  */
-template <class Event_T, class Func_T>
-constexpr EventReactor::EntryLocation_t EventReactor::registerCallback
+template <class Event, class Fn>
+EventReactor::EntryLocation EventReactor::registerCallback
 (
-    Func_T&& function
+    Fn&& function
 )
 {
-    if constexpr (std::is_convertible_v<Func_T, std::function<void()>>) {
-        return this->_insertCallback(getTypeId<Event_T>(), [&](const void*) {
+    if constexpr (std::is_convertible_v<Fn, std::function<void()>>)
+    { // If callback has no parameter
+        return this->_insertCallback(this->_getKey<Event>(), [&](const void*) {
             function();
         });
     }
-    else return this->_insertCallback(getTypeId<Event_T>(), [&](const void* ev) {
-        function(*static_cast<const Event_T*>(ev));
+    else return this->_insertCallback(this->_getKey<Event>(), [&](const void* ev) {
+        function(*static_cast<const Event*>(ev));
     });
 }
 
 /**
  * Register non-const class methods taking const& to event as argument.
  */
-template <class Event_T, class T>
-constexpr EventReactor::EntryLocation_t EventReactor::registerCallback
+template <class Event, class T>
+EventReactor::EntryLocation EventReactor::registerCallback
 (
-    void (T::*function)(const Event_T&),
+    MemFnEventParam<Event, T> function,
     T& object
 )
 {
-    auto memFun = std::mem_fn(function);
+    auto memFun = std::mem_fn(std::move(function));
     auto callback = [memFun, &function, &object](const void* ev) {
-        std::invoke(memFun, object, *static_cast<const Event_T*>(ev));
+        std::invoke(memFun, &object, *static_cast<const Event*>(ev));
     };
-    return this->_insertCallback(getTypeId<Event_T>(), std::move(callback));
+    return this->_insertCallback(this->_getKey<Event>(), std::move(callback));
 }
 
 /**
  * Register const class methods taking const& to event as argument.
  */
-template <class Event_T, class T>
-constexpr EventReactor::EntryLocation_t EventReactor::registerCallback
+template <class Event, class T>
+EventReactor::EntryLocation EventReactor::registerCallback
 (
-    void (T::*function)(const Event_T&) const,
+    ConstMemFnEventParam<Event, T> function,
     const T& object
 )
 {
-    auto memFun = std::mem_fn(function);
+    auto memFun = std::mem_fn(std::move(function));
     auto callback = [memFun, &function, &object](const void* ev) {
-        std::invoke(memFun, object, *static_cast<const Event_T*>(ev));
+        std::invoke(memFun, &object, *static_cast<const Event*>(ev));
     };
-    return this->_insertCallback(getTypeId<Event_T>(), std::move(callback));
+    return this->_insertCallback(this->_getKey<Event>(), std::move(callback));
 }
 
 /**
  * Register non-const class methods taking no argument.
  */
-template <class Event_T, class T>
-constexpr EventReactor::EntryLocation_t EventReactor::registerCallback
+template <class Event, class T>
+EventReactor::EntryLocation EventReactor::registerCallback
 (
-    void (T::*function)(),
+    MemFnNoParam<T> function,
     T& object
 )
 {
-    auto memFun = std::mem_fn(function);
+    auto memFun = std::mem_fn(std::move(function));
     auto callback = [memFun, &function, &object](const void*) {
-        std::invoke(memFun, object);
+        std::invoke(memFun, &object);
     };
-    return this->_insertCallback(getTypeId<Event_T>(), std::move(callback));
+    return this->_insertCallback(this->_getKey<Event>(), std::move(callback));
 }
 
 /**
  * Register const class methods taking no argument.
  */
-template <class Event_T, class T>
-constexpr EventReactor::EntryLocation_t EventReactor::registerCallback
+template <class Event, class T>
+EventReactor::EntryLocation EventReactor::registerCallback
 (
-    void (T::*function)() const,
+    ConstMemFnNoParam<T> function,
     const T& object
 )
 {
-    auto memFun = std::mem_fn(function);
+    auto memFun = std::mem_fn(std::move(function));
     auto callback = [memFun, &function, &object](const void*) {
-        std::invoke(memFun, object);
+        std::invoke(memFun, &object);
     };
-    return this->_insertCallback(getTypeId<Event_T>(), std::move(callback));
+    return this->_insertCallback(this->_getKey<Event>(), std::move(callback));
 }
 
 /**
  * Delete a registered callback
  */
-void EventReactor::eraseEntry(const EntryLocation_t& location)
+void EventReactor::eraseEntry(const EntryLocation& location)
 {
-    // Find the right vector.
-    const auto [iterator, index] = location;
-    auto& vector = iterator->second;
-
-    // Find the right entry.
-    auto vecIt = vector.begin();
-    std::advance(vecIt, index);
-
-    vector.erase(vecIt);
+    mCallbacks.erase(location);
 }
 
 /**
  * Fire callbacks registered for this type of event.
  */
-template <class Event_T>
-constexpr void EventReactor::reactTo(const Event_T& event) const
+template <class Event>
+void EventReactor::reactTo(const Event& event) const
 {
-    auto it = mCallbacks.find(getTypeId<Event_T>());
+    const auto range = mCallbacks.equal_range(this->_getKey<Event>());
 
-    // Bail if no callbacks registered.
-    if (it == mCallbacks.end())
-        return;
-
-    // Call all callbacks for this event type id.
-    for (const auto& callback : std::as_const(it->second)) {
-        std::invoke(callback, static_cast<const void*>(&event));
+    for (auto it = range.first; it != range.second; ++it) {
+        std::invoke(it->second, static_cast<const void*>(&event));
     }
 }
 
@@ -130,25 +118,23 @@ constexpr void EventReactor::reactTo(const Event_T& event) const
  * the callback into the instance's map and return the location
  * of the new entry.
  */
-EventReactor::EntryLocation_t EventReactor::_insertCallback
+EventReactor::EntryLocation EventReactor::_insertCallback
 (
-    EventType_t eventType,
+    Key eventType,
     std::function<void(const void*)>&& callback
 )
 {
-    // Get an iterator to the relevant array in the map.
-    // It will be constructed in place now if it is not already there.
-    std::pair<Map_t::iterator, bool>
-        insertionResult = mCallbacks.try_emplace(eventType);
-
-    // The iterator gives us the array to insert to.
-    auto& vector = insertionResult.first->second;
-    vector.push_back(std::move(callback));
-
-    // Construct the returned object, which enables finding this entry later.
-    return { insertionResult.first, vector.size() - 1 };
+    return mCallbacks.insert({eventType, std::move(callback)});
 }
 
+/**
+ * Transform a type into a key for the multimap.
+ */
+template <class Event>
+EventReactor::Key EventReactor::_getKey() const
+{
+    return std::type_index(typeid(Event));
+}
 
 
 

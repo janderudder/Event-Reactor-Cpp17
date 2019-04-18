@@ -12,59 +12,76 @@
 #include <map>
 #include <vector>
 #include <functional>
-#include "getTypeId.hpp"
+#include <typeinfo>
+#include <typeindex>
 
 
 class EventReactor
 {
-    using EventType_t       = std::uintptr_t;
-    using Callback_t        = std::function<void(const void*)>;
-    using Map_t             = std::map<EventType_t, std::vector<Callback_t>>;
-    using EntryLocation_t   = std::pair<Map_t::iterator, std::size_t>;
+    // Declare the field of this class
+    using Key               = std::type_index;
+    using Callback          = std::function<void(const void*)>;
+    using Multimap          = std::multimap<Key, Callback>;
 
-    Map_t mCallbacks;
+    Multimap mCallbacks;
+
+    // Additional useful types
+    using EntryLocation         = Multimap::iterator;
+
+    template <class T>
+    using MemFnNoParam          = void (T::*)();
+
+    template <class T>
+    using ConstMemFnNoParam     = void (T::*)() const;
+
+    template <class Event, class T>
+    using MemFnEventParam       = void (T::*)(const Event&);
+
+    template <class Event, class T>
+    using ConstMemFnEventParam  = void (T::*)(const Event&) const;
+
 
 public:
     /**
      * Register free and static class functions.
      */
-    template <class Event_T, class Func_T>
-    constexpr EntryLocation_t registerCallback(Func_T&& function);
+    template <class Event, class Fn>
+    EntryLocation registerCallback(Fn&&);
 
     /**
      * Register non-const class methods taking const& to event as argument.
      */
-    template <class Event_T, class T>
-    constexpr EntryLocation_t registerCallback(void (T::*function)(const Event_T&), T& object);
+    template <class Event, class T>
+    EntryLocation registerCallback(MemFnEventParam<Event, T>, T& object);
 
     /**
      * Register const class methods taking const& to event as argument.
      */
-    template <class Event_T, class T>
-    constexpr EntryLocation_t registerCallback(void (T::*function)(const Event_T&) const, const T& object);
+    template <class Event, class T>
+    EntryLocation registerCallback(ConstMemFnEventParam<Event, T>, const T& object);
 
     /**
      * Register non-const class methods taking no argument.
      */
-    template <class Event_T, class T>
-    constexpr EntryLocation_t registerCallback(void (T::*function)(), T& object);
+    template <class Event, class T>
+    EntryLocation registerCallback(MemFnNoParam<T>, T& object);
 
     /**
      * Register const class methods taking no argument.
      */
-    template <class Event_T, class T>
-    constexpr EntryLocation_t registerCallback(void (T::*function)() const, const T& object);
+    template <class Event, class T>
+    EntryLocation registerCallback(ConstMemFnNoParam<T>, const T& object);
 
     /**
      * Delete a registered callback
      */
-    void eraseEntry(const EntryLocation_t& location);
+    void eraseEntry(const EntryLocation& location);
 
     /**
      * Fire callbacks registered for this type of event.
      */
-    template <class Event_T>
-    constexpr void reactTo(const Event_T& event) const;
+    template <class Event>
+    void reactTo(const Event& event) const;
 
 
 private:
@@ -73,8 +90,13 @@ private:
      * the callback into the instance's map and return the location
      * of the new entry.
      */
-    EntryLocation_t _insertCallback(EventType_t eventType, std::function<void(const void*)>&& callback);
+    EntryLocation _insertCallback(Key, std::function<void(const void*)>&&);
 
+    /**
+     * Transform a type into a key for the multimap.
+     */
+    template <class Event>
+    Key _getKey() const;
 
 };
 
